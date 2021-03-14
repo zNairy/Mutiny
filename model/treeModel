@@ -1,0 +1,51 @@
+___[manage]:
+	|__[invites]
+	|	|- create Private Invite
+	|	|- accept Private Invite
+	|	|- cancel Private Invite
+	|	|- decline Private Invite	
+	|	|- add User To Private
+	|	|- leave From Private
+	|	|- on Private
+	|	|- on Wait Room
+	|	|- remove Users From Private
+	|	|- remove User From Waitroom
+	|	|- received Invites		
+	|	|- create Wait Room Folder
+	|	|- remove Wait Room Folder	
+	|	|- open Invite
+	|	|- update Invite
+	|
+	|__[users]
+	|	|- codename Exists
+	|	|- create New Identifier
+	|	|- create Registred Users Folder
+	|	|- create User Data
+	|	|- login User
+	|	|- open User Profile
+	|	|- receive Profile Data
+	|	|- save User Profile
+	|	|- total Users Online
+	|	|- user Online
+	|	|- verify User Profile
+	|	|- valid Identifier
+	|
+	|__[commands]
+	|	|- all Commands
+	|	|- check Command
+	|	|- split Received Command
+	|	|- send Available Commands
+	|	
+	|__[messages]
+	|	|- listen User Messages
+	|	|- send Message To
+	|	|- send Message To Everyone
+	|	|- send Version
+	|	|- send Contact
+	|	|- send Code Author
+	|
+	|__[server system]
+	|	|- clear Screen
+	|	|- show Server Info
+	|	|- configure Socket Connection
+	|	|- listen Connections
