@@ -150,7 +150,7 @@ class Server(object):
             connection.close()
     
     def listenUserMessages(self, connection, codename):
-        self.sendMessageTo(connection, f' Olá {codename}, seja bem-vindo à Munity!')
+        self.sendMessageTo(connection, f' Olá {codename}, seja bem-vindo à Mutiny!')
 
         while True:
             userOnline = connection.recv(2048)
