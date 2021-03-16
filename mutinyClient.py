@@ -11,6 +11,7 @@ from termcolor import colored
 from json import loads, dumps
 from os import uname, system
 from pathlib import Path
+from time import sleep
 
 class Client(object):
     def __init__(self, host='0.0.0.0', port=5000):
@@ -74,6 +75,7 @@ class Client(object):
         return commands
 
     def receiveMessages(self):
+        sleep(0.5)
         while True:
             message = self.__client.recv(2048)
             if message:
