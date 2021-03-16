@@ -14,7 +14,6 @@ Em seguida instale os recursos necessários em <b>dependencies/requirements</b> 
 ```bash
 python -m pip install -r dependencies/requirements.txt
 ```
-<br>
 
 ## Como usar
 Inicie o lado servidor (<b>munityServer</b>) para suportar cada cliente que se conecta à ele. Por padrão, tanto o servidor quanto cada cliente é conectado no endereço <tt>localhost:5000</tt> se nenhum argumento for passado em sua instância.
@@ -44,8 +43,8 @@ Depois inicie simulando cada cliente executando o <b>munityClient</b>, informand
 - Cada usuário quando logado recebe um <b>identificador</b> gerado pelo servidor, de modo que cada um seja único e não possa acessar outro usuário apenas informando seu nickname.
 - Como dito anteriormente, os perfis de usuários ficam salvos em <tt>.client/profiles</tt>. Se um perfil for alterado, não conseguirá mais logar no servidor visto que seu nickname e identificador são verificados à cada nova seção. Esse sistema foi implementado por fins práticos à de se usar uma senha, sendo mais simples e atingindo a ideia original do projeto.
 - Os usuários cadastrados no servidor se mantém mesmo quando o servidor está offline, mas os convites enviados entre os usuários não.
-- O arquivo [treeModel](./model/treeModel) mostra a estrutura do programa, entre suas funcões, comandos e utilidades do sistema divididos.
-<br>
+- O arquivo [treeModel](./model/treeModel) mostra a estrutura do programa, entre suas funcões, comandos e utilidades do sistema divididos.<br>
+
 <br>
 
 ## Objetivo | observações
