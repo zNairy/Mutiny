@@ -12,6 +12,7 @@ from json import loads, dumps
 from os import uname, system
 from pathlib import Path
 from time import sleep
+import emoji.unicode_codes.en
 
 class Client(object):
     def __init__(self, host='0.0.0.0', port=5000):
@@ -48,6 +49,34 @@ class Client(object):
         if Path(f'.client/profiles/{codename}.json').is_file():
             return True
 
+    #this function shows all usable emojis
+    def showAllEmojis(self, params=None):
+        for allemojis in emoji.EMOJI_UNICODE_ENGLISH:
+            print(allemojis + '->' + emoji.emojize(allemojis))
+
+    #this function only the most common emojis based on the website - > https://www.go2web.com.br/pt-BR/blog/os-100-emojis-mais-usados.html
+    def showEmojis(self, params=None):
+        lista = [
+            ':red_heart:',
+            ':face_with_tears_of_joy:',
+            ':cat_with_tears_of_joy:',
+            ':unamused_face:',
+            ':fire:',
+            ':smirking_face:',
+            ':two_hearts:',
+            ':thumbs_up:',
+            ':thumbs_down:',
+            ':eyes:',
+            ':flushed_face:',
+            ':disappointed_face:',
+            ':sunglasses:',
+            ':hot_beverage:',
+            ':skull:'
+        ]
+        for iten in lista:
+            print(iten +' -> '+emoji.emojize(iten))
+
+
     def changeNameColor(self, params):
         availableColors = ['grey', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
 
@@ -69,6 +98,8 @@ class Client(object):
         commands = {
             "/namecolor": {"description": "Troca a cor do seu nome de usuário. Ex: /namecolor red | Cores disponíveis:\n   Grey, Red, Green, Yellow, Blue, Magenta, Cyan, White.", "function": self.changeNameColor},
             "/exit": {"description": "Não vai ficar para a demonstração?", "function": self.exitSession},
+            "/allemojis": {"description": "Mostra os emojis disponíves", "function": self.showAllEmojis},#calls the function of line 53
+            "/emojis": {"description": "Mostra os emojis mais comuns", "function": self.showEmojis},#calls the function of line 58
             "/clear": {"description": "Limpou a tela antes de eu querer mostrar amigão ;( ", "function": self.clearScreen}
         }
         
@@ -79,8 +110,8 @@ class Client(object):
         while True:
             message = self.__client.recv(2048)
             if message:
-                data = loads(message)
-                print(colored(f'\n[{data["codename"]}]:', data["nameColor"]), data["message"], end='')
+                data = loads(message)                                        #this piece of code (emoji.emojize()) is used to show the emoji
+                print(colored(f'\n[{data["codename"]}]:', data["nameColor"]), emoji.emojize(data["message"]) , end='')
                 print(colored(f'\n[{self.codeName}]: ', self.nameColor), end='')
             else:
                 print(colored('\n     Conexao encerrada pelo servidor...','red'))
