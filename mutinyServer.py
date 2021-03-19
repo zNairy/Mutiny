@@ -60,6 +60,8 @@ class Server(object):
             "/decline": {"description": "Recusa um convite para sala privada feito por algum usuário. Ex: /decline zNairy", "function": self.declinePrivateInvite},
             "/leave": {"description": "Deixa uma sala privada com algum usuário.", "function": self.leaveFromPrivate},
             "/invites": {"description": "", "function": self.receivedInvites},
+            "/emojis": {},
+            "/allemojis": {},
             "/namecolor": {},
             "/clear": {},
             "/exit": {}
