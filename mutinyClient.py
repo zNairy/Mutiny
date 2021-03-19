@@ -98,7 +98,7 @@ class Client(object):
         commands = {
             "/namecolor": {"description": "Troca a cor do seu nome de usuário. Ex: /namecolor red | Cores disponíveis:\n   Grey, Red, Green, Yellow, Blue, Magenta, Cyan, White.", "function": self.changeNameColor},
             "/exit": {"description": "Não vai ficar para a demonstração?", "function": self.exitSession},
-            "/allemojis": {"description": "Mostra os emojis disponives", "function": self.showAllEmojis},#calls the function of line 53
+            "/allemojis": {"description": "Mostra os emojis disponíves", "function": self.showAllEmojis},#calls the function of line 53
             "/emojis": {"description": "Mostra os emojis mais comuns", "function": self.showEmojis},#calls the function of line 58
             "/clear": {"description": "Limpou a tela antes de eu querer mostrar amigão ;( ", "function": self.clearScreen}
         }
