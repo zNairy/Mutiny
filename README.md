@@ -16,7 +16,7 @@ python -m pip install -r dependencies/requirements.txt
 ```
 
 ## Como usar
-Inicie o lado servidor (<b>munityServer</b>) para suportar cada cliente que se conecta à ele. Por padrão, tanto o servidor quanto cada cliente é conectado no endereço <tt>localhost:5000</tt> se nenhum argumento for passado em sua instância.
+Inicie o lado servidor (<b>mutinyServer</b>) para suportar cada cliente que se conecta à ele. Por padrão, tanto o servidor quanto cada cliente é conectado no endereço <tt>localhost:5000</tt> se nenhum argumento for passado em sua instância.
 ```bash
 python mutinyServer.py
 ```
@@ -28,7 +28,7 @@ server = Server() # Server('127.0.0.1', 1010)
 server.run()
 ```
 
-Depois inicie simulando cada cliente executando o <b>munityClient</b>, informando seu nome de usuário posteriormente.
+Depois inicie simulando cada cliente executando o <b>mutinyClient</b>, informando seu nome de usuário posteriormente.
 
 <img src="./img/runclientdemo.gif" height="500" width="900">
 <br>Por padrão os perfis de usuários utilizados ficarão salvos em <tt>.client/profiles</tt>. O mesmo acontece no lado servidor quando um usuário tem êxito ao se conectar, residindo em <tt>.server/registeredUsers</tt><br>
