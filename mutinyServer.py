@@ -10,6 +10,7 @@ from termcolor import colored
 from pathlib import Path
 from random import sample
 from os import uname, system
+from sqlite3 import connect
 from shutil import rmtree
 from json import loads, dumps
 from threading import Thread
@@ -88,21 +89,26 @@ class Server(object):
 
     def sendAvailableCommands(self, user, params):
         self.sendMessageTo(user, params['description'])
-
-    def codenameExists(self, codename):
-        if Path(f'.server/registeredUsers/{codename}.json').is_file():
-            return True
     
+    def codenameExists(self, codename):
+        with connect('server.db') as database:
+            cursor = database.cursor()
+            cursor.execute('select * from users where codename = ?', (codename,))
+
+            if cursor.fetchone():
+                return True
+
     def validIdentifier(self, profile):
         if self.codenameExists(profile['codename']):
-            if profile['identifier'] == self.openUserProfile(profile['codename'])['identifier']:
-                return True
+            with connect('server.db') as database:
+                cursor = database.cursor()
+                cursor.execute('select identifier from users where codename = ?', (profile['codename'],))
+
+                if profile['identifier'] == cursor.fetchone()[0]:
+                    return True
     
     def createNewIdentifier(self):
         return ''.join(str(num) for num in sample(range(0, 10), 9))
-    
-    def createRegistredUsersFolder(self):
-        if not Path('.server/registeredUsers').is_dir(): Path('.server/registeredUsers').mkdir(parents=True)
     
     def createUserData(self, codename, connection):
         return {codename: {"connectionAddress": connection, "onPrivate": {} }}
@@ -120,9 +126,11 @@ class Server(object):
         return connection.recv(128)
     
     def saveUserProfile(self, profile):
-        with open(f'.server/registeredUsers/{profile["codename"]}.json', 'w') as userProfile:
-            userProfile.write(dumps({"identifier": profile['identifier']}))
-    
+        with connect('server.db') as database:
+            cursor = database.cursor()
+            cursor.execute('insert into users values (?,?)',(profile['identifier'], profile['codename'],))
+            database.commit()
+
     def totalUsersOnline(self):
         return len(self.connectedUsers)
     
@@ -135,6 +143,7 @@ class Server(object):
 
         if profile:
             profile = loads(profile)
+
             if profile.get('identifier'):
                 if self.validIdentifier(profile) and not self.userOnline(profile['codename']):
                     connection.send(dumps(profile).encode())
@@ -357,11 +366,9 @@ class Server(object):
         except Exception as err:
             print(colored(f'Erro: {err}', 'red')) & exit(1)
         finally:
-            self.createRegistredUsersFolder()
             self.createWaitRoomFolder()
             self.showServerInfo()
             self.listenConnections()
-
 
 
 def main():
