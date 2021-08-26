@@ -9,6 +9,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 from threading import Thread
 from termcolor import colored
 from json import loads, dumps
+from sqlite3 import connect
 from os import uname, system
 from pathlib import Path
 from time import sleep
@@ -34,20 +35,30 @@ class Client(object):
         if not Path('.client/profiles').is_dir():
             Path('.client/profiles').mkdir(parents=True)
 
-    def createProfileData(self, codename):
-        return {"codename": codename, "identifier": ""}
+    def createProfileData(self, codename, identifier=""):
+        return {"codename": codename, "identifier": identifier}
 
     def saveUserProfile(self, profile):
-        with open(f'.client/profiles/{profile["codename"]}.json', 'w') as userProfile:
-            userProfile.write(dumps({"identifier": profile['identifier']}))
+        with connect('client.db') as database:
+            cursor = database.cursor()
+            cursor.execute('insert into profiles values (?,?)',(profile['codename'],profile['identifier'],))
+            database.commit()
 
     def openUserProfile(self, codename):
-        with open(f'.client/profiles/{codename}.json', 'rb') as userProfile:
-            return loads(userProfile.read())
+        with connect('client.db') as database:
+            cursor = database.cursor()
+
+            cursor.execute('select * from profiles where codename = ?', (codename,))
+            data = cursor.fetchall()[0]
+            return self.createProfileData(data[0], data[1])
 
     def userProfileExists(self, codename):
-        if Path(f'.client/profiles/{codename}.json').is_file():
-            return True
+        with connect('client.db') as database:
+            cursor = database.cursor()
+
+            cursor.execute('select * from profiles where codename = ?',(codename,))
+            if cursor.fetchone():
+                return True
 
     #this function shows all usable emojis
     def showAllEmojis(self, params=None):
@@ -75,7 +86,6 @@ class Client(object):
         ]
         for iten in lista:
             print(iten +' -> '+emoji.emojize(iten))
-
 
     def changeNameColor(self, params):
         availableColors = ['grey', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
@@ -173,7 +183,7 @@ class Client(object):
                     self.loginUser(codename)
                 else:
                     self.clearScreen()
-                    print(colored(' Identificador inválido ou usuário já conectado.', 'red'))
+                    print(colored(' Identificador inválido ou usuário já cadastrado.', 'red'))
                     self.__client.close()
                     self.run()
             else:
@@ -216,7 +226,6 @@ class Client(object):
         except ConnectionRefusedError:
             self.showServerInfo() & exit(1)
         
-        self.createUsersProfileFolder()
         self.showServerInfo('Ativo', 'green')
         self.startNewSession()
 
