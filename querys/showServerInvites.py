@@ -5,7 +5,11 @@ def main():
     with connect('server.db') as database:
         cursor = database.cursor()
 
-        cursor.execute('select userId, codename, identifier from users')
+        cursor.execute("""
+            select inviteId, receiver, codename, created, accepted, finished from invites
+            join users on invites.sender = users.userId
+        """)
+        
         pprint(cursor.fetchall())
 
 

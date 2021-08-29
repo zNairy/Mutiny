@@ -5,7 +5,7 @@ def main():
     with connect('client.db') as database:
         cursor = database.cursor()
 
-        cursor.execute('select * from profiles')
+        cursor.execute('select codename, identifier from profiles')
         pprint(cursor.fetchall())
 
 
