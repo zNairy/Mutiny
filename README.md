@@ -49,5 +49,5 @@ Depois inicie simulando cada cliente executando o <b>mutinyClient</b>, informand
 
 ## Objetivo | observações
 - O projeto não tem por finalidade ser muito complexo, apenas apresentar a ideia original.
-- As implementações feitas foram simples, caso queira contribuir implementando opções avançadas como banco de dados, segurança na camada de envio de mensagens como SSL entre outros, abra um pull request ou dê sugestões entrando em contato comigo no <a target='_blank' href='https://discord.com'>Discord</a>.
+- As implementações feitas foram simples, caso queira contribuir implementando opções avançadas como segurança na camada de envio de mensagens como SSL entre outros, abra um pull request ou dê sugestões entrando em contato comigo no <a target='_blank' href='https://discord.com'>Discord</a>.
 - No que diz respeito à interface, o chat ainda precisa de uma melhoria por usar a principal funcionalidade para entrada e saída de dados. A entrada no input do terminal faz com que se alguma outra pessoa enviar uma mensagem ela seja "sobreescrita", o que mantém a informação salva mas visualmente não agrada muito. Uma interface gráfica mantendo o estilo de um terminal, mas separando cada área para visualização e entrada das mensagens seria o ideal. (em versões futuras)
