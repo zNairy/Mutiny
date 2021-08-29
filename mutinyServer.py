@@ -11,6 +11,7 @@ from pathlib import Path
 from random import sample
 from os import uname, system
 from sqlite3 import connect
+from datetime import datetime
 from shutil import rmtree
 from json import loads, dumps
 from threading import Thread
@@ -128,7 +129,7 @@ class Server(object):
     def saveUserProfile(self, profile):
         with connect('server.db') as database:
             cursor = database.cursor()
-            cursor.execute('insert into users values (?,?)',(profile['identifier'], profile['codename'],))
+            cursor.execute('insert into users values (?,?,?)',(None, profile['codename'], profile['identifier'],))
             database.commit()
 
     def totalUsersOnline(self):
@@ -192,7 +193,7 @@ class Server(object):
     def sendMessageTo(self, user, message):
         data = {"codename": "Servidor", "nameColor": "green", "message": message}
         user.send(dumps(data).encode())
-    
+        
     def sendVersion(self, user, params):
         self.sendMessageTo(user, params['description'])
 
@@ -202,59 +203,69 @@ class Server(object):
     def sendCodeAuthor(self, user, params):
         self.sendMessageTo(user, params['description'])
     
-    def addUserToPrivate(self, codenames):
+    def addUsersToPrivate(self, codenames):
         self.connectedUsers[codenames[0]]['onPrivate'].update({"codename": codenames[1], "connectionAddress": self.connectedUsers[codenames[1]]['connectionAddress']})
         self.connectedUsers[codenames[1]]['onPrivate'].update({"codename": codenames[0], "connectionAddress": self.connectedUsers[codenames[0]]['connectionAddress']})
 
     def acceptPrivateInvite(self, user, params):
         if params['functionArgs']:
             if not self.onPrivate(params['userData']['codename']):
-                if self.onWaitRoom(params['userData']['codename']):
-                    invite = self.openInvite(params["userData"]["codename"])
-                    
-                    if params['functionArgs'][0] in invite.get('invitationFrom'):
-                        invite.get('invitationFrom').remove(params['functionArgs'][0])
-                        if invite.get('invitationFrom'):
-                            self.updateInvite(params["userData"]["codename"], invite)
-                        else:
-                            self.removeUserFromWaitroom(params["userData"]["codename"])
+                if self.userOnline(params['functionArgs'][0]):
+                    with connect('server.db') as database:
+                        cursor = database.cursor()
+                        cursor.execute(f"""
+                            select inviteId from invites where receiver = '{params['userData']['codename']}' and
+                            sender = (select userId from users where codename = '{params['functionArgs'][0]}')
+                            and finished = 0;
+                        """)
 
-                        self.addUserToPrivate((params["userData"]["codename"], params["functionArgs"][0]))
-                        self.sendMessageTo(user, f'Você está em uma sala privada com @{params["functionArgs"][0]} agora!')
-                        self.sendMessageTo(self.connectedUsers[params['functionArgs'][0]]['connectionAddress'], f'@{params["userData"]["codename"]} aceitou seu pedido, você está em uma sala privada agora!')
-                    else:
-                        self.sendMessageTo(user, f'Você não recebeu nenhum convite de @{params["functionArgs"][0]}...')
+                        inviteId = cursor.fetchone()
+                        if inviteId:
+                            # finishing private invite and set accepted column with '1 = True'
+                            cursor.execute('update invites set finished = 1, accepted = 1 where inviteId = ?', (inviteId[0],))
+                            database.commit()
+                            
+                            self.addUsersToPrivate((params["userData"]["codename"], params["functionArgs"][0]))
+                            if self.userOnline(params['userData']['codename']): self.sendMessageTo(user, f'Você está em uma sala privada com @{params["functionArgs"][0]} agora!')
+                            if self.userOnline(params['functionArgs'][0]): self.sendMessageTo(self.connectedUsers[params['functionArgs'][0]]['connectionAddress'], f'@{params["userData"]["codename"]} aceitou seu pedido, você está em uma sala privada agora!')
+                        else:
+                            self.sendMessageTo(user, f' Você não tem recebeu nenhum convite de @{params["functionArgs"][0]}')
                 else:
-                    self.sendMessageTo(user, 'Parece que você não recebeu nenhum convite para sala privada...')
+                    self.sendMessageTo(user, f'@{params["functionArgs"][0]} não está online no momento...')
             else:
                 self.sendMessageTo(user, 'Você não pode aceitar um convite porque já está em uma sala privada...')
         else:
             self.sendMessageTo(user, params['description'])
-        
+
     def createPrivateInvite(self, user, params):
         if params['functionArgs']:
             if not self.onPrivate(params['userData']['codename']):
                 if params['userData']['codename'] != params['functionArgs'][0]:
                     if self.userOnline(params['functionArgs'][0]):
-                        if not self.onWaitRoom(params['functionArgs'][0]):
-                            invite = {"invitationFrom": [params['userData']['codename']]}
-                            self.updateInvite(params["functionArgs"][0], invite)
 
-                            if not self.onPrivate(params['functionArgs'][0]):
-                                message = f' Olá {params["functionArgs"][0]}, o usuário @{params["userData"]["codename"]} quer se conectar com você!\n   Para aceitar digite /accept {params["userData"]["codename"]}'
-                                self.sendMessageTo(self.connectedUsers.get(params["functionArgs"][0])['connectionAddress'], message)
-                                self.sendMessageTo(user, f'Pedido enviado à @ {params["functionArgs"][0]}!')
-                        else:
-                            invite = self.openInvite(params["functionArgs"][0])
+                        with connect('server.db') as database:
+                            cursor = database.cursor()
+                            cursor.execute(f"""
+                                select sender from invites where receiver = '{params['functionArgs'][0]}' and
+                                sender = (select userId from users where codename = '{params['userData']['codename']}')
+                                and finished = 0;
+                            """)
 
-                            if params['userData']['codename'] not in invite.get('invitationFrom'):
-                                invite.get('invitationFrom').append(params['userData']['codename'])
-                                self.updateInvite(params["functionArgs"][0], invite)
+                            if not cursor.fetchall():
+                                cursor.execute('select userId from users where codename = ?',(params['userData']['codename'],))
+                                senderId = cursor.fetchone()[0]
+                                cursor.execute(f'insert into invites values (?,?,?,?,?,?)', (
+                                    None, params['functionArgs'][0], senderId, datetime.now(), False, False
+                                ))
+
+                                database.commit()
 
                                 if not self.onPrivate(params['functionArgs'][0]):
                                     message = f' Olá {params["functionArgs"][0]}, o usuário @{params["userData"]["codename"]} quer se conectar com você!\n   Para aceitar digite /accept {params["userData"]["codename"]}'
-                                    self.sendMessageTo(self.connectedUsers.get(params["functionArgs"][0])['connectionAddress'], message)
-                                    self.sendMessageTo(user, f'Pedido enviado à @ {params["functionArgs"][0]}!')
+                                    if self.userOnline(params["functionArgs"][0]): self.sendMessageTo(self.connectedUsers.get(params["functionArgs"][0])['connectionAddress'], message)
+                                    if self.userOnline(params['userData']['codename']): self.sendMessageTo(user, f'Pedido enviado à @ {params["functionArgs"][0]}!')
+                            else:
+                                self.sendMessageTo(user, f'Você já enviou um convite à @{params["functionArgs"][0]}...')
                     else:
                         self.sendMessageTo(user, f'O usuário @{params["functionArgs"][0]} não está online no momento...')
                 else:
@@ -266,49 +277,57 @@ class Server(object):
 
     def cancelPrivateInvite(self, user, params):
         if params['functionArgs']:
-            if self.onWaitRoom(params["functionArgs"][0]):
-                invite = self.openInvite(params["functionArgs"][0])
+            if params['functionArgs'][0] != params['userData']['codename']:
+                with connect('server.db') as database:
+                    cursor = database.cursor()
+                    cursor.execute(f"""
+                        select inviteId from invites where receiver = '{params['functionArgs'][0]}' and
+                        sender = (select userId from users where codename = '{params['userData']['codename']}')
+                        and finished = 0;
+                    """)
 
-                if params['userData']['codename'] in invite.get('invitationFrom'):
-                    invite.get('invitationFrom').remove(params['userData']['codename'])
-                    if invite.get('invitationFrom'):
-                        self.updateInvite(params["functionArgs"][0], invite)
+                    inviteId = cursor.fetchone()
+                    if inviteId:
+                        # removing user invite
+                        cursor.execute('update invites set finished = 1 where inviteId = ?', (inviteId[0],))
+                        database.commit()
+
+                        # sending message to users
+                        if self.userOnline(params['userData']['codename']): self.sendMessageTo(user, f'Convite para @{params["functionArgs"][0]} removido!')
+                        if self.userOnline(params['functionArgs'][0]): self.sendMessageTo(self.connectedUsers[params['functionArgs'][0]]['connectionAddress'], f' @{params["userData"]["codename"]} cancelou o convite para sala privada com você.')
                     else:
-                        self.removeUserFromWaitroom(params["functionArgs"][0])
-
-                    self.sendMessageTo(user, f'Convite para @{params["functionArgs"][0]} removido!')
-                    if self.userOnline(params["functionArgs"][0]):
-                        self.sendMessageTo(self.connectedUsers[params['functionArgs'][0]]['connectionAddress'], f'O usuário @{params["userData"]["codename"]} cancelou o convite para sala privada com você.')
-                else:
-                    self.sendMessageTo(user, f'Você não enviou nenhum convite à @{params["functionArgs"][0]}!')
+                        self.sendMessageTo(user, f'Você não enviou nenhum convite a @{params["functionArgs"][0]}...')
             else:
-                self.sendMessageTo(user, f'Você não enviou nenhum convite à @{params["functionArgs"][0]}!')
+                self.sendMessageTo(user, f'Você não pode recusar um convite de sí mesmo...')
         else:
             self.sendMessageTo(user, params['description'])
-    
+
     def createWaitRoomFolder(self):
         if not Path('.server/waitRoom').is_dir(): Path('.server/waitRoom').mkdir(parents=True)
     
     def declinePrivateInvite(self, user, params):
         if params['functionArgs']:
-            if self.onWaitRoom(params['userData']['codename']):
-                invite = self.openInvite(params['userData']['codename'])
-                if params['functionArgs'][0] in invite.get('invitationFrom'):
-                    invite.get('invitationFrom').remove(params['functionArgs'][0])
-                    if invite.get('invitationFrom'):
-                        self.updateInvite(params['userData']['codename'], invite)
-                    else:
-                        self.removeUserFromWaitroom(params['userData']['codename'])
-                    
-                    self.sendMessageTo(user, f'Convite de @{params["functionArgs"][0]} foi removido!')
-                    self.sendMessageTo(self.connectedUsers[params['functionArgs'][0]]['connectionAddress'], f'@{params["userData"]["codename"]} recusou o seu pedido para sala privada...')
+            with connect('server.db') as database:
+                cursor = database.cursor()
+                cursor.execute(f"""
+                    select inviteId from invites where receiver = '{params['userData']['codename']}' and
+                    sender = (select userId from users where codename = '{params['functionArgs'][0]}')
+                    and finished = 0;
+                """)
+
+                inviteId = cursor.fetchone()
+                if inviteId:
+                    cursor.execute('update invites set finished = 1 where inviteId = ?',(inviteId[0],))
+                    database.commit()
+
+                    # sending message to users
+                    if self.userOnline(params['userData']['codename']): self.sendMessageTo(user, f'Você removeu o convite de @{params["functionArgs"][0]}.')
+                    if self.userOnline(params['functionArgs'][0]): self.sendMessageTo(self.connectedUsers[params['functionArgs'][0]]['connectionAddress'], f'@{params["userData"]["codename"]} recusou seu convite para sala privada...')
                 else:
-                    self.sendMessageTo(user, f'Você não recebeu nenhum convite de @{params["functionArgs"][0]}...')
-            else:
-                self.sendMessageTo(user, 'Parece que você não tem nenhum convite para sala privada...')
+                    self.sendMessageTo(user, f' Você não tem recebeu nenhum convite de @ {params["functionArgs"][0]}')
         else:
             self.sendMessageTo(user, params['description'])
-    
+
     def leaveFromPrivate(self, user, params):
         if self.onPrivate(params['userData']['codename']):
             codenames = (params['userData']['codename'], self.connectedUsers[params['userData']['codename']]['onPrivate']['codename'])
@@ -339,20 +358,27 @@ class Server(object):
         Path(f'.server/waitRoom/{codename}.json').unlink()
     
     def receivedInvites(self, user, params):
-        if Path(f'.server/waitRoom/{params["userData"]["codename"]}.json').is_file():
-            invite = self.openInvite(params["userData"]["codename"])
-            if invite.get('invitationFrom'):
-                invites = invite.get('invitationFrom')
-                if len(invites) > 1:
-                    message = f'Você tem convite de {len(invites)} pessoas.\n' + ''.join(f'@{name}, ' for name in invites[:len(invites)-1]) + f'e @{invites[len(invites)-1]}.'
-                    self.sendMessageTo(user, message)
+        with connect('server.db') as database:
+            cursor = database.cursor()
+            cursor.execute(f"""
+                select codename from invites
+                join users on invites.sender = users.userId
+                where invites.finished != 1 and invites.receiver = '{params['userData']['codename']}'
+            """)
+
+            invitesFrom = cursor.fetchall()
+
+            if invitesFrom:
+                if len(invitesFrom) > 1:
+                    self.sendMessageTo(
+                        user,
+                        f'Você tem convite de {len(invitesFrom)} pessoas.\n' + ''.join(f'@{name[0]}, ' for name in invitesFrom[:len(invitesFrom)-1]) + f'e @{invitesFrom[len(invitesFrom)-1][0]}.'
+                    )
                 else:
-                    self.sendMessageTo(user, f'Você tem um convite de @{invites[0]}!')
+                    self.sendMessageTo(user, f'Você tem um convite de @{invitesFrom[0][0]}!')
             else:
-                self.sendMessageTo(user, 'Parece que você ainda não têm nenhum convite ;(')
-        else:
-            self.sendMessageTo(user, 'Parece que você ainda não têm nenhum convite ;(')
-    
+                self.sendMessageTo(user, 'Nenhum convite recente ;(')
+
     def removeWaitRoomFolder(self):
         if Path('.server/waitRoom').is_dir(): rmtree('.server/waitRoom')
     
