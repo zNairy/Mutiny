@@ -11,7 +11,6 @@ from termcolor import colored
 from json import loads, dumps
 from sqlite3 import connect
 from os import uname, system
-from pathlib import Path
 from time import sleep
 import emoji.unicode_codes.en
 
@@ -31,10 +30,6 @@ class Client(object):
         codename = ''.join(char for char in input(colored(' Máximo de 20 caractéres | Nickname: ', 'yellow')).split())
         return self.clearCodeName(codename)
     
-    def createUsersProfileFolder(self):
-        if not Path('.client/profiles').is_dir():
-            Path('.client/profiles').mkdir(parents=True)
-
     def createProfileData(self, codename, identifier=""):
         return {"codename": codename, "identifier": identifier}
 
@@ -60,12 +55,12 @@ class Client(object):
             if cursor.fetchone():
                 return True
 
-    #this function shows all usable emojis
+    # this function shows all usable emojis
     def showAllEmojis(self, params=None):
         for allemojis in emoji.EMOJI_UNICODE_ENGLISH:
             print(allemojis + '->' + emoji.emojize(allemojis))
 
-    #this function only the most common emojis based on the website - > https://www.go2web.com.br/pt-BR/blog/os-100-emojis-mais-usados.html
+    # this function only the most common emojis based on the website - > https://www.go2web.com.br/pt-BR/blog/os-100-emojis-mais-usados.html
     def showEmojis(self, params=None):
         lista = [
             ':red_heart:',
@@ -229,11 +224,11 @@ class Client(object):
         self.showServerInfo('Ativo', 'green')
         self.startNewSession()
 
-
-
 def main():
     client = Client()
     client.run()
+
+
 
 if __name__ == '__main__':
     main()
