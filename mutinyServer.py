@@ -7,12 +7,10 @@ __version__ = '2.0'
 
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from termcolor import colored
-from pathlib import Path
 from random import sample
 from os import uname, system
 from sqlite3 import connect
 from datetime import datetime
-from shutil import rmtree
 from json import loads, dumps
 from threading import Thread
 
@@ -37,8 +35,8 @@ class Server(object):
                 connection, address = self.__server.accept()
                 self.startProcess(self.verifyUserProfile, (connection, address))
         except KeyboardInterrupt:
-            self.removeWaitRoomFolder()
-    
+            pass
+
     def startProcess(self, function, args):
         thread = Thread(target=function, args=args)
         thread.daemon = True
@@ -119,10 +117,6 @@ class Server(object):
         self.startProcess(self.listenUserMessages, (connection, codename))
         self.showServerInfo()
 
-    def openUserProfile(self, codename):
-        with open(f'.server/registeredUsers/{codename}.json', 'rb') as userProfile:
-            return loads(userProfile.read())
-    
     def receiveProfileData(self, connection):
         return connection.recv(128)
     
@@ -302,9 +296,6 @@ class Server(object):
         else:
             self.sendMessageTo(user, params['description'])
 
-    def createWaitRoomFolder(self):
-        if not Path('.server/waitRoom').is_dir(): Path('.server/waitRoom').mkdir(parents=True)
-    
     def declinePrivateInvite(self, user, params):
         if params['functionArgs']:
             with connect('server.db') as database:
@@ -338,24 +329,13 @@ class Server(object):
         else:
             self.sendMessageTo(user, f'Você não está em uma sala privada no momento.')
     
-    def onWaitRoom(self, codename):
-        if Path(f'.server/waitRoom/{codename}.json').is_file():
-            return True
-
     def onPrivate(self, codename):
         if self.connectedUsers[codename]['onPrivate']:
             return True
     
-    def openInvite(self, codename):
-        with open(f'.server/waitRoom/{codename}.json', 'rb') as inviteFile:
-            return loads(inviteFile.read())
-    
     def removeUsersFromPrivate(self, codenames):
         for user in codenames:
             self.connectedUsers[user]['onPrivate'] = {}
-    
-    def removeUserFromWaitroom(self, codename):
-        Path(f'.server/waitRoom/{codename}.json').unlink()
     
     def receivedInvites(self, user, params):
         with connect('server.db') as database:
@@ -379,27 +359,20 @@ class Server(object):
             else:
                 self.sendMessageTo(user, 'Nenhum convite recente ;(')
 
-    def removeWaitRoomFolder(self):
-        if Path('.server/waitRoom').is_dir(): rmtree('.server/waitRoom')
-    
-    def updateInvite(self, codename, invite):
-        with open(f'.server/waitRoom/{codename}.json', 'w') as inviteFile:
-            inviteFile.write(dumps(invite))
-    
     def run(self):
         try:
             self.__server = self.configureSocketConnection()
         except Exception as err:
             print(colored(f'Erro: {err}', 'red')) & exit(1)
         finally:
-            self.createWaitRoomFolder()
             self.showServerInfo()
             self.listenConnections()
-
 
 def main():
     server = Server()
     server.run()
+
+
 
 if __name__ == '__main__':
     main()
