@@ -7,22 +7,14 @@ ___[manage]:
 	|	|- add User To Private
 	|	|- leave From Private
 	|	|- on Private
-	|	|- on Wait Room
 	|	|- remove Users From Private
-	|	|- remove User From Waitroom
 	|	|- received Invites		
-	|	|- create Wait Room Folder
-	|	|- remove Wait Room Folder	
-	|	|- open Invite
-	|	|- update Invite
 	|
 	|__[users]
 	|	|- codename Exists
 	|	|- create New Identifier
-	|	|- create Registred Users Folder
 	|	|- create User Data
 	|	|- login User
-	|	|- open User Profile
 	|	|- receive Profile Data
 	|	|- save User Profile
 	|	|- total Users Online
